@@ -89,7 +89,7 @@ namespace CobotADTNoSQLEventGridFunctionApp
                         Container elbowContainer = cobotDatabase.GetContainer(id: "elbowContainer");
                         ElbowRecord elbowRecordItem = await elbowContainer.CreateItemAsync<ElbowRecord>(
                             item: elbowRecord,
-                            partitionKey: new PartitionKey("ControlBox"));
+                            partitionKey: new PartitionKey("Elbow"));
                         log.LogInformation(JsonConvert.SerializeObject(elbowRecordItem, Formatting.Indented));
                         break;
                     case "dtmi:com:Cobot:JointLoad:Base;1":
@@ -180,7 +180,7 @@ namespace CobotADTNoSQLEventGridFunctionApp
                         Container toolContainer = cobotDatabase.GetContainer(id: "toolContainer");
                         ToolRecord toolRecordItem = await toolContainer.CreateItemAsync<ToolRecord>(
                             item: toolRecord,
-                            partitionKey: new PartitionKey("Wrist3"));
+                            partitionKey: new PartitionKey("Tool"));
                         log.LogInformation(JsonConvert.SerializeObject(toolRecordItem, Formatting.Indented));
                         break;
                     default:
