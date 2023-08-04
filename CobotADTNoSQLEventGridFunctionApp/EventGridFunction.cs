@@ -37,19 +37,28 @@ namespace CobotADTNoSQLEventGridFunctionApp
                 log.LogInformation(JsonConvert.SerializeObject(rootModel, Formatting.Indented));
                 Azure.JsonPatchDocument jsonPatchDocument = new Azure.JsonPatchDocument();
                 string timestamp = DateTime.Now.ToString("yyyyMMddHHmmssffff");
+                log.LogInformation(timestamp);
                 switch (rootModel.Data.ModelId)
                 {
                     case "dtmi:com:Cobot:Cobot;1":
-                        Cobot cobot = new(
-                            id: $"cobot-{timestamp}",
-                            timestamp: timestamp,
-                            elapsedTime: rootModel.Data.Patch.Find(patch => patch.Path.Contains("/ElapsedTime")).Value
-                        );
-                        Cobot cobotCreatedItem = await cobotContainer.CreateItemAsync<Cobot>(
-                            item: cobot,
-                            partitionKey: new PartitionKey(timestamp)
-                        );
-                        Console.WriteLine($"Created item:\t{cobotCreatedItem.id}\t{cobotCreatedItem.elapsedTime}\t[{cobotCreatedItem.timestamp}]");
+                        log.LogInformation(rootModel.Data.ModelId);
+                        try
+                        {
+                            Cobot cobot = new(
+                                id: $"cobot-{timestamp}",
+                                timestamp: timestamp,
+                                elapsedTime: rootModel.Data.Patch.Find(patch => patch.Path.Contains("/ElapsedTime")).Value
+                            );
+                            Cobot cobotCreatedItem = await cobotContainer.CreateItemAsync<Cobot>(
+                                item: cobot,
+                                partitionKey: new PartitionKey(timestamp)
+                            );
+                            Console.WriteLine($"Created item:\t{cobotCreatedItem.id}\t{cobotCreatedItem.elapsedTime}\t[{cobotCreatedItem.timestamp}]");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.ToString());
+                        }
                         break;
                     case "dtmi:com:Cobot:Payload;1":
                         //jsonPatchDocument.AppendReplace("/Mass", rootObject.Data.Patch.Find(patch => patch.Path.Contains("/Mass")).Value);
