@@ -26,7 +26,7 @@ namespace CobotADTNoSQLEventGridFunctionApp
             DigitalTwinsClient digitalTwinsClient = new DigitalTwinsClient(endpoint: new Uri(adtInstanceUrl), credential: defaultAzureCredential);
             log.LogInformation(eventGridEvent.Data.ToString());
             log.LogInformation($"ADT service client connection created.");
-            CosmosClient cosmosClient = new CosmosClient(accountEndpoint: Environment.GetEnvironmentVariable(cosmosUri), tokenCredential: defaultAzureCredential);
+            CosmosClient cosmosClient = new CosmosClient(accountEndpoint: cosmosUri, tokenCredential: defaultAzureCredential);
             log.LogInformation($"Cosmos service client connection created.");
             log.LogInformation(eventGridEvent.Data.ToString());
             Database cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: "cosmosDb");
