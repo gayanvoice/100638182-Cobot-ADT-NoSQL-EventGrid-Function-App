@@ -29,7 +29,7 @@ namespace CobotADTNoSQLEventGridFunctionApp
             CosmosClient cosmosClient = new CosmosClient(accountEndpoint: cosmosUri, tokenCredential: defaultAzureCredential);
             log.LogInformation($"Cosmos service client connection created.");
             log.LogInformation(eventGridEvent.Data.ToString());
-            Database cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: "cosmosDb");
+            Database cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: "cobotDb");
             Container cobotContainer = cosmosDatabase.GetContainer(id: "cobotContainer");
             if (eventGridEvent != null && eventGridEvent.Data != null)
             {
