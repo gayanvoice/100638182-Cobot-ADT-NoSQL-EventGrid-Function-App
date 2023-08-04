@@ -12,6 +12,7 @@ using Azure.DigitalTwins.Core;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using CobotADTNoSQLEventGridFunctionApp.Model;
+using CobotADTNoSQLEventGridFunctionApp.Helper;
 
 namespace CobotADTNoSQLEventGridFunctionApp
 {
@@ -19,44 +20,35 @@ namespace CobotADTNoSQLEventGridFunctionApp
     {
         private static readonly string adtInstanceUrl = Environment.GetEnvironmentVariable("ADT_SERVICE_URL");
         private static readonly string cosmosUri = Environment.GetEnvironmentVariable("COSMOS_URI");
+        private static readonly string cosmosKey = Environment.GetEnvironmentVariable("COSMOS_KEY");
         [FunctionName("ProcessADTRoutedDataToNoSql")]
         public static async Task ProcessADTRoutedDataToNoSqlAsync([EventGridTrigger] EventGridEvent eventGridEvent, ILogger log)
         {
             DefaultAzureCredential defaultAzureCredential = new DefaultAzureCredential();
             DigitalTwinsClient digitalTwinsClient = new DigitalTwinsClient(endpoint: new Uri(adtInstanceUrl), credential: defaultAzureCredential);
-            log.LogInformation(eventGridEvent.Data.ToString());
-            log.LogInformation($"ADT service client connection created.");
-            CosmosClient cosmosClient = new CosmosClient(accountEndpoint: cosmosUri, tokenCredential: defaultAzureCredential);
-            log.LogInformation($"Cosmos service client connection created.");
-            log.LogInformation(eventGridEvent.Data.ToString());
-            Database cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: "cobotDb");
-            log.LogInformation(cosmosDatabase.ToString());
-            Container cobotContainer = cosmosDatabase.GetContainer(id: "cobotContainer");
-            log.LogInformation(cobotContainer.ToString());
+            CosmosClient cosmosClient = new CosmosClient(accountEndpoint: cosmosUri, authKeyOrResourceToken: cosmosKey);
+            Database cobotDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: "cobotDatabase");
             if (eventGridEvent != null && eventGridEvent.Data != null)
             {
                 RootModel rootModel = JsonConvert.DeserializeObject<RootModel>(eventGridEvent.Data.ToString());
                 log.LogInformation(JsonConvert.SerializeObject(rootModel, Formatting.Indented));
                 Azure.JsonPatchDocument jsonPatchDocument = new Azure.JsonPatchDocument();
-                string timestamp = DateTime.Now.ToString("yyyyMMddHHmmssffff");
-                log.LogInformation(timestamp);
                 switch (rootModel.Data.ModelId)
-
                 {
                     case "dtmi:com:Cobot:Cobot;1":
-                        log.LogInformation(rootModel.Data.ModelId);
-
-                        Cobot cobot = new(
-                            id: $"cobot-{timestamp}",
-                            timestamp: timestamp,
+                        DateTime dateTime = DateTime.Now;
+                        CobotRecord cobot = new(
+                            id: EncryptionHelper.MD5Encryption(dateTime.ToString()),
+                            deviceId: "Cobot",
+                            timestamp: dateTime.ToString("yyyyMMddHHmmssffff"),
                             elapsedTime: rootModel.Data.Patch.Find(patch => patch.Path.Contains("/ElapsedTime")).Value
                         );
-                        Cobot cobotCreatedItem = await cobotContainer.CreateItemAsync<Cobot>(
+                        Container cobotContainer = cobotDatabase.GetContainer(id: "cobotContainer");
+                        CobotRecord cobotRecordItem = await cobotContainer.CreateItemAsync<CobotRecord>(
                             item: cobot,
-                            partitionKey: new PartitionKey(timestamp)
+                            partitionKey: new PartitionKey("Cobot")
                         );
-                        Console.WriteLine($"Created item:\t{cobotCreatedItem.id}\t{cobotCreatedItem.elapsedTime}\t[{cobotCreatedItem.timestamp}]");
-
+                        Console.WriteLine($"CobotRecordItem:\t{JsonConvert.SerializeObject(cobotRecordItem, Formatting.Indented)}");
                         break;
                     case "dtmi:com:Cobot:Payload;1":
                         //jsonPatchDocument.AppendReplace("/Mass", rootObject.Data.Patch.Find(patch => patch.Path.Contains("/Mass")).Value);
